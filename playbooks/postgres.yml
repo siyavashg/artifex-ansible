@@ -1,0 +1,40 @@
+---
+- name: Install PostgreSQL on Ubuntu
+  hosts: database
+  become: true
+  tasks:
+    - name: Update package index
+      apt:
+        update_cache: yes
+
+    - name: Install PostgreSQL and dependencies
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+        state: present
+
+    - name: Start PostgreSQL service
+      systemd:
+        name: postgresql
+        enabled: yes
+        state: started
+
+    - name: Ensure PostgreSQL listens on all interfaces
+      lineinfile:
+        path: /etc/postgresql/14/main/postgresql.conf
+        regexp: "^#?listen_addresses"
+        line: "listen_addresses = '*'"
+      notify: Restart PostgreSQL
+
+    - name: Allow remote connections from internal IPs
+      lineinfile:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        line: "host all all 10.0.0.0/24 md5"
+      notify: Restart PostgreSQL
+
+  handlers:
+    - name: Restart PostgreSQL
+      systemd:
+        name: postgresql
+        state: restarted
