@@ -2,6 +2,8 @@
 - name: Install PostgreSQL on Ubuntu
   hosts: database
   become: true
+  vars_files:
+    - ../secrets.yml
   tasks:
     - name: Update package index
       apt:
@@ -19,6 +21,19 @@
         name: postgresql
         enabled: yes
         state: started
+
+    - name: Set a password for the PostgreSQL user
+      become_user: postgres
+      postgresql_user:
+        name: postgres
+        password: "{{ postgres_password }}"
+
+    - name: Allow password authentication in pg_hba.conf
+      replace:
+        path: /etc/postgresql/14/main/pg_hba.conf
+        regexp: '^(host\s+all\s+all\s+\d+\.\d+\.\d+\.\d+/\d+\s+)(peer|ident|trust)'
+        replace: '\1md5'
+      notify: Restart PostgreSQL
 
     - name: Ensure PostgreSQL listens on all interfaces
       lineinfile:
