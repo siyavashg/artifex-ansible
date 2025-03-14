@@ -22,11 +22,23 @@
         enabled: yes
         state: started
 
-    - name: Set a password for the PostgreSQL user
+    - name: Install Python dependencies for PostgreSQL
+      become: true
+      apt:
+        name:
+          - python3-psycopg2
+          - python3-pip
+          - libpq-dev
+        state: present
+
+    - name: Set PostgreSQL user password
+      become: true
       become_user: postgres
-      postgresql_user:
-        name: postgres
-        password: "{{ postgres_password }}"
+      become_flags: "-i"
+      community.postgresql.postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        encrypted: yes
 
     - name: Allow password authentication in pg_hba.conf
       replace:
